@@ -49,7 +49,7 @@ post {
             script {
                 withCredentials([
                     string(credentialsId: 'TELEGRAM_BOT_TOKEN', variable: 'TOKEN'),
-                    string(credentialsId: 'TELEGRAM_CHAT_ID', variable: 'CHAT_ID')
+                    string(credentialsId: 'CHAT_ID', variable: 'CHAT_ID')
                 ]) {
                     def buildStatus = currentBuild.currentResult
                     def buildTime = currentBuild.durationString
