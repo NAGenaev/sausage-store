@@ -44,42 +44,38 @@ pipeline {
 
     }
 
-    post {
-        success {
-            script {
-                withCredentials([
-                    string(credentialsId: 'TELEGRAM_BOT_TOKEN', variable: 'TOKEN'),
-                    string(credentialsId: 'CHAT_ID', variable: 'CHAT_ID')
-                ]) {
-                    def MESSAGE = "✅ *Сборка успешна!* 🎉\n" +
-                                  "📦 *Проект:* ${env.JOB_NAME}\n" +
-                                  "🆔 *Build ID:* #${env.BUILD_NUMBER}\n" +
-                                  "🔗 [Перейти в Jenkins](${env.BUILD_URL})"
-
-                    sh """
-                    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \\
-                        -d "chat_id=${CHAT_ID}" \\
-                        -d "text=${MESSAGE}" \\
-                        -d "parse_mode=Markdown"
-                    """
-                }
-            }
-        }
-        failure {
+post {
+        always {
             script {
                 withCredentials([
                     string(credentialsId: 'TELEGRAM_BOT_TOKEN', variable: 'TOKEN'),
                     string(credentialsId: 'TELEGRAM_CHAT_ID', variable: 'CHAT_ID')
                 ]) {
-                    def MESSAGE = "❌ *Сборка провалилась!* 😢\n" +
-                                  "📦 *Проект:* ${env.JOB_NAME}\n" +
-                                  "🆔 *Build ID:* #${env.BUILD_NUMBER}\n" +
-                                  "🔗 [Перейти в Jenkins](${env.BUILD_URL})"
+                    def buildStatus = currentBuild.currentResult
+                    def buildTime = currentBuild.durationString
+                    def triggeredBy = currentBuild.getBuildCauses()[0]?.userId ?: "Автоматически"
+                    def gitBranch = env.GIT_BRANCH ?: "Неизвестно"
+                    def gitCommit = env.GIT_COMMIT ?: "Неизвестно"
+
+                    def message = """
+📢 *Jenkins уведомление*  
+${buildStatus == 'SUCCESS' ? '✅ *Сборка успешна!* 🎉' : '❌ *Ошибка сборки!* 🚨'}  
+
+📦 *Проект:* ${env.JOB_NAME}  
+🆔 *Build ID:* #${env.BUILD_NUMBER}  
+🔗 [Ссылка на билд](${env.BUILD_URL})  
+
+🏷 *Бранч:* ${gitBranch}  
+🔀 *Коммит:* ${gitCommit}  
+🖥 *Агент:* ${env.NODE_NAME}  
+⏳ *Длительность:* ${buildTime}  
+👤 *Запустил:* ${triggeredBy}  
+                    """
 
                     sh """
                     curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \\
                         -d "chat_id=${CHAT_ID}" \\
-                        -d "text=${MESSAGE}" \\
+                        -d "text=${message}" \\
                         -d "parse_mode=Markdown"
                     """
                 }
