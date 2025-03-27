@@ -41,5 +41,50 @@ pipeline {
                 archiveArtifacts(artifacts: 'frontend/dist/frontend/*')
             }
         }
+
     }
+
+    post {
+        success {
+            script {
+                withCredentials([
+                    string(credentialsId: 'TELEGRAM_BOT_TOKEN', variable: 'TOKEN'),
+                    string(credentialsId: 'CHAT_ID', variable: 'CHAT_ID')
+                ]) {
+                    def MESSAGE = "✅ *Сборка успешна!* 🎉\n" +
+                                  "📦 *Проект:* ${env.JOB_NAME}\n" +
+                                  "🆔 *Build ID:* #${env.BUILD_NUMBER}\n" +
+                                  "🔗 [Перейти в Jenkins](${env.BUILD_URL})"
+
+                    sh """
+                    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \\
+                        -d "chat_id=${CHAT_ID}" \\
+                        -d "text=${MESSAGE}" \\
+                        -d "parse_mode=Markdown"
+                    """
+                }
+            }
+        }
+        failure {
+            script {
+                withCredentials([
+                    string(credentialsId: 'TELEGRAM_BOT_TOKEN', variable: 'TOKEN'),
+                    string(credentialsId: 'TELEGRAM_CHAT_ID', variable: 'CHAT_ID')
+                ]) {
+                    def MESSAGE = "❌ *Сборка провалилась!* 😢\n" +
+                                  "📦 *Проект:* ${env.JOB_NAME}\n" +
+                                  "🆔 *Build ID:* #${env.BUILD_NUMBER}\n" +
+                                  "🔗 [Перейти в Jenkins](${env.BUILD_URL})"
+
+                    sh """
+                    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \\
+                        -d "chat_id=${CHAT_ID}" \\
+                        -d "text=${MESSAGE}" \\
+                        -d "parse_mode=Markdown"
+                    """
+                }
+            }
+        }
+    }
+
 } 
